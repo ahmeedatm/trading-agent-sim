@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -62,6 +63,14 @@ def test_metrics_drawdown():
     assert m["total_return"] == pytest.approx(0.10)
 
 
+def test_metrics_measured_from_starting_capital():
+    # The first close already lost 2 % versus the 100 of starting cash.
+    m = metrics(pd.Series([98.0, 99.0, 101.0]), capital=100)
+    assert m["total_return"] == pytest.approx(0.01)
+    assert m["max_drawdown"] == pytest.approx(-0.02)
+    assert np.isnan(m["cagr"])                    # too short to annualise
+
+
 def test_plan_orders():
     orders = plan_orders({"A": "Buy", "B": "Sell", "C": "Hold", "D": "Overweight"},
                          equity=4000, holdings={"B": 300, "C": 900, "D": 750})
@@ -81,3 +90,15 @@ def test_profiles_set_provider_and_models(monkeypatch):
     assert (mixed["llm_provider"], mixed["quick_think_llm"]) == ("openrouter", "openai/gpt-6-luna")
     with pytest.raises(ValueError):
         build_config(profile="nope")
+
+
+def test_openrouter_deepseek_uses_json_schema_native_deepseek_untouched():
+    from tradingagents.llm_clients import openai_client
+
+    from tasim.config import build_config
+
+    build_config(profile="openrouter")
+    caps = openai_client.get_capabilities
+    assert caps("deepseek/deepseek-v4-pro").preferred_structured_method == "json_schema"
+    assert caps("deepseek-v4-pro").preferred_structured_method == "function_calling"
+    assert caps("openai/gpt-6-luna").preferred_structured_method == "function_calling"

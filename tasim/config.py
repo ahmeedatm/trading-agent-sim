@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 
 from dotenv import load_dotenv
 
@@ -26,10 +27,38 @@ PROFILES = {
 DEFAULT_PROFILE = "balanced"
 
 
+def _use_json_schema_for_openrouter_deepseek() -> None:
+    """Make DeepSeek models reached through OpenRouter use ``json_schema`` structured output.
+
+    TradingAgents maps ``deepseek/<id>`` to the native DeepSeek capabilities: schema bound
+    as a tool with no ``tool_choice``. On the long Research/Portfolio Manager prompts the
+    thinking model then answers in plain text, every structured call misses and the agent
+    falls back to free text. OpenRouter supports ``response_format`` json_schema for these
+    models, which parsed reliably in testing. The native ``deepseek`` provider is untouched.
+    """
+    from tradingagents.llm_clients import openai_client
+    from tradingagents.llm_clients.capabilities import ModelCapabilities, get_capabilities
+
+    if getattr(openai_client.get_capabilities, "_tasim_patched", False):
+        return
+
+    def patched(model_name: str) -> ModelCapabilities:
+        caps = get_capabilities(model_name)
+        if model_name.startswith("deepseek/"):
+            return replace(caps, supports_json_schema=True,
+                           preferred_structured_method="json_schema")
+        return caps
+
+    patched._tasim_patched = True
+    openai_client.get_capabilities = patched
+
+
 def build_config(results_dir: str | None = None, memory_log_path: str | None = None,
                  profile: str | None = None) -> dict:
     # Imported lazily: it reads TRADINGAGENTS_* env vars at import time, after load_dotenv.
     from tradingagents.default_config import DEFAULT_CONFIG
+
+    _use_json_schema_for_openrouter_deepseek()
 
     config = DEFAULT_CONFIG.copy()
     # An explicit profile wins; otherwise TRADINGAGENTS_* env vars, then the default profile.

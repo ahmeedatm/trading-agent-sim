@@ -108,16 +108,24 @@ def buy_and_hold(close_px: pd.DataFrame, open_px: pd.DataFrame, tickers: list[st
     return (window * pd.Series(shares)).sum(axis=1)
 
 
-def metrics(equity: pd.Series) -> dict[str, float]:
+# Annualising a few weeks of returns gives absurd CAGRs; below ~6 months it is left blank.
+MIN_DAYS_FOR_CAGR = 126
+
+
+def metrics(equity: pd.Series, capital: float | None = None) -> dict[str, float]:
+    """Performance stats. With ``capital``, returns and drawdown are measured from the
+    starting cash rather than the first close (which already includes day-one moves)."""
     equity = equity.dropna()
     rets = equity.pct_change().dropna()
     years = max(len(equity) / 252, 1 / 252)
-    total = equity.iloc[-1] / equity.iloc[0] - 1
+    base = capital if capital is not None else equity.iloc[0]
+    total = equity.iloc[-1] / base - 1
+    peak = equity.cummax() if capital is None else equity.cummax().clip(lower=capital)
     vol = rets.std() * np.sqrt(252) if len(rets) > 1 else 0.0
     return {
         "total_return": total,
-        "cagr": (1 + total) ** (1 / years) - 1,
+        "cagr": (1 + total) ** (1 / years) - 1 if len(equity) >= MIN_DAYS_FOR_CAGR else np.nan,
         "volatility": vol,
         "sharpe": (rets.mean() * 252 / vol) if vol else 0.0,
-        "max_drawdown": (equity / equity.cummax() - 1).min(),
+        "max_drawdown": (equity / peak - 1).min(),
     }

@@ -62,7 +62,8 @@ def cmd_simulate(args) -> None:
     curves.to_csv(run_dir / "equity.csv")
     pd.DataFrame([t.__dict__ for t in sim.trades]).to_csv(run_dir / "trades.csv", index=False)
 
-    table = pd.DataFrame({name: metrics(curve) for name, curve in curves.items()}).T
+    table = pd.DataFrame({name: metrics(curve, args.capital)
+                          for name, curve in curves.items()}).T
     final = curves.iloc[-1].rename("final_value")
     report = pd.concat([final, table], axis=1)
     print(f"\nCapital {args.capital:,.0f} $ · {first_trade.date()} -> {curves.index[-1].date()} "
