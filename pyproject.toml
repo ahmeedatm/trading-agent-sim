@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trading-agent-sim"
+version = "0.1.0"
+description = "Portfolio simulation (backtest + Alpaca paper trading) on top of TradingAgents"
+requires-python = ">=3.10"
+dependencies = [
+    "tradingagents @ git+https://github.com/TauricResearch/TradingAgents@v0.5.1",
+    "pandas>=2.3.0",
+    "yfinance>=1.4.1",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+paper = ["alpaca-py>=0.44"]
+dev = ["pytest>=8.0", "ruff>=0.15"]
+
+[project.scripts]
+tasim = "tasim.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["tasim*"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
