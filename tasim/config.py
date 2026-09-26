@@ -20,6 +20,8 @@ PROFILES = {
     "eco": ("deepseek", "deepseek-v4-pro", "deepseek-flash"),
     "balanced": ("openai", "gpt-6-sol", "gpt-6-luna"),
     "premium": ("anthropic", "claude-sonnet-5", "claude-haiku-4-5"),
+    # One key, providers mixed per tier: cheapest strong deep model + cheapest quick model.
+    "openrouter": ("openrouter", "deepseek/deepseek-v4-pro", "openai/gpt-6-luna"),
 }
 DEFAULT_PROFILE = "balanced"
 

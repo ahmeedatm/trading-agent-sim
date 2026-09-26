@@ -77,5 +77,7 @@ def test_profiles_set_provider_and_models(monkeypatch):
     assert build_config()["quick_think_llm"] == "gpt-6-luna"
     eco = build_config(profile="eco")
     assert (eco["llm_provider"], eco["deep_think_llm"]) == ("deepseek", "deepseek-v4-pro")
+    mixed = build_config(profile="openrouter")
+    assert (mixed["llm_provider"], mixed["quick_think_llm"]) == ("openrouter", "openai/gpt-6-luna")
     with pytest.raises(ValueError):
         build_config(profile="nope")

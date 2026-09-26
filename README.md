@@ -57,8 +57,10 @@ la facture. Le modèle *deep* ne sert qu'au Research Manager et au Portfolio Man
 | `eco` | `deepseek-v4-pro` | `deepseek-flash` | 0,66/1,98 · 0,15/0,60 (hors pointe, x2 en heures de pointe) |
 | `balanced` (défaut) | `gpt-6-sol` | `gpt-6-luna` | 2/10 · 0,10/0,50 |
 | `premium` | `claude-sonnet-5` | `claude-haiku-4-5` | 2/10 · 1/5 |
+| `openrouter` | `deepseek/deepseek-v4-pro` | `openai/gpt-6-luna` | ~0,42/0,84 · 0,10/0,50 + 5,5 % de frais à l'achat de crédits — une seule clé `OPENROUTER_API_KEY` |
 
-Prix relevés en septembre 2026, à revérifier. Les variables `TRADINGAGENTS_*` restent utilisables
+Le profil `openrouter` est le seul à mélanger deux fournisseurs (TradingAgents n'accepte qu'un fournisseur
+à la fois, OpenRouter en est un). Prix relevés en septembre 2026, à revérifier. Les variables `TRADINGAGENTS_*` restent utilisables
 pour tout autre modèle (sans `TASIM_PROFILE`).
 
 ## Limites à garder en tête
