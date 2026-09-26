@@ -102,3 +102,21 @@ def test_openrouter_deepseek_uses_json_schema_native_deepseek_untouched():
     assert caps("deepseek/deepseek-v4-pro").preferred_structured_method == "json_schema"
     assert caps("deepseek-v4-pro").preferred_structured_method == "function_calling"
     assert caps("openai/gpt-6-luna").preferred_structured_method == "function_calling"
+
+
+def test_hold_entry_opens_unowned_ticker_but_keeps_existing_position():
+    px = frame({"A": [10.0] * 4, "B": [10.0] * 4})
+    sigs = signals([("A", "2026-01-05", "Underweight"), ("A", "2026-01-06", "Hold"),
+                    ("B", "2026-01-06", "Hold")])
+    default = simulate(sigs, px, px, capital=1000, fee_bps=0)
+    assert [t.ticker for t in default.trades] == ["A"]          # Hold never trades
+    sim = simulate(sigs, px, px, capital=1000, fee_bps=0, hold_entry=0.5)
+    notional = {(t.ticker, t.rating): t.shares * t.price for t in sim.trades}
+    assert notional == {("A", "Underweight"): pytest.approx(125),   # A's Hold keeps 125
+                        ("B", "Hold"): pytest.approx(250)}
+
+
+def test_plan_orders_hold_entry():
+    orders = plan_orders({"A": "Hold", "B": "Hold"}, equity=4000, holdings={"B": 300},
+                         hold_entry=0.5)
+    assert {o.ticker: (o.side, o.notional) for o in orders} == {"A": ("buy", 1000)}

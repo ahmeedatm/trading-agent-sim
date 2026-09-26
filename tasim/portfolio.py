@@ -5,7 +5,8 @@ Rules (long-only, no leverage):
 - A rating dated D is executed at the OPEN of the first trading day strictly
   after D. TradingAgents may read D's close, so trading on D would be look-ahead.
 - On execution the ticker is traded to ``equity_at_open * exposure / N``; Hold
-  and REVIEW leave the position alone. Buys are capped by available cash.
+  and REVIEW leave the position alone (``hold_entry`` lets a Hold on an unowned
+  ticker open a position at that exposure). Buys are capped by available cash.
 - Fees are charged in basis points of traded notional. Equity is marked at close.
 """
 
@@ -43,7 +44,8 @@ class SimulationResult:
 def simulate(signals: pd.DataFrame, open_px: pd.DataFrame, close_px: pd.DataFrame,
              capital: float = 10_000.0, fee_bps: float = 5.0,
              tickers: list[str] | None = None,
-             exposure_map: dict[str, float | None] | None = None) -> SimulationResult:
+             exposure_map: dict[str, float | None] | None = None,
+             hold_entry: float | None = None) -> SimulationResult:
     tickers = tickers or sorted(signals["ticker"].unique())
     n = len(tickers)
     days = close_px.index
@@ -72,7 +74,8 @@ def simulate(signals: pd.DataFrame, open_px: pd.DataFrame, close_px: pd.DataFram
             # Sells first so their cash funds the buys on the same open.
             planned = []
             for ticker, rating in orders:
-                exposure = target_exposure(rating, exposure_map)
+                exposure = target_exposure(rating, exposure_map, held=shares[ticker] > 0,
+                                           hold_entry=hold_entry)
                 price = _px(opens, ticker)
                 if exposure is None or np.isnan(price):
                     continue

@@ -48,7 +48,8 @@ def cmd_simulate(args) -> None:
     prices = load_prices(tickers + [args.benchmark], start, end)
 
     sim = simulate(signals, prices.open[tickers], prices.close[tickers],
-                   capital=args.capital, fee_bps=args.fee_bps, tickers=tickers)
+                   capital=args.capital, fee_bps=args.fee_bps, tickers=tickers,
+                   hold_entry=args.hold_entry)
     first_trade = sim.trades[0].date if sim.trades else sim.equity.index[0]
     curves = pd.DataFrame({
         "strategy": sim.equity.loc[first_trade:],
@@ -79,7 +80,8 @@ def cmd_paper(args) -> None:
 
     analysts = ALL_ANALYSTS if args.full else QUICK_ANALYSTS
     orders = run_daily(args.tickers, RUNS / args.run, execute=args.execute,
-                       selected_analysts=analysts, profile=args.profile)
+                       selected_analysts=analysts, profile=args.profile,
+                       hold_entry=args.hold_entry)
     if not orders:
         print("No orders (all Hold/REVIEW or already on target).")
     for o in orders:
@@ -109,6 +111,9 @@ def main() -> None:
     p.add_argument("--fee-bps", type=float, default=5.0)
     p.add_argument("--benchmark", default="SPY")
     p.add_argument("--end")
+    p.add_argument("--hold-entry", type=float, metavar="EXPOSURE",
+                   help="a Hold on an unowned ticker opens this fraction of its slot "
+                        "(e.g. 0.5); default: Hold never trades")
     p.set_defaults(func=cmd_simulate)
 
     p = sub.add_parser("paper", help="today's ratings -> Alpaca paper orders")
@@ -117,6 +122,9 @@ def main() -> None:
     p.add_argument("--full", action="store_true")
     p.add_argument("--profile", choices=sorted(PROFILES), help="LLM profile (default: balanced)")
     p.add_argument("--execute", action="store_true", help="actually send orders (paper account)")
+    p.add_argument("--hold-entry", type=float, metavar="EXPOSURE",
+                   help="a Hold on an unowned ticker opens this fraction of its slot "
+                        "(e.g. 0.5); default: Hold never trades")
     p.set_defaults(func=cmd_paper)
 
     args = parser.parse_args()

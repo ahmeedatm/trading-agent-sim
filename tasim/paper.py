@@ -41,15 +41,15 @@ def _client():
 
 
 def plan_orders(ratings: dict[str, str], equity: float, holdings: dict[str, float],
-                exposure_map=None) -> list[Order]:
+                exposure_map=None, hold_entry: float | None = None) -> list[Order]:
     """Orders that move each ticker's market value to its slot target."""
     n = len(ratings)
     orders = []
     for ticker, rating in ratings.items():
-        exposure = target_exposure(rating, exposure_map)
+        held = holdings.get(ticker, 0.0)
+        exposure = target_exposure(rating, exposure_map, held=held > 0, hold_entry=hold_entry)
         if exposure is None:
             continue
-        held = holdings.get(ticker, 0.0)
         if exposure == 0 and held > 0:
             orders.append(Order(ticker, rating, "close", held))
             continue
@@ -60,7 +60,8 @@ def plan_orders(ratings: dict[str, str], equity: float, holdings: dict[str, floa
 
 
 def run_daily(tickers: list[str], run_dir: Path, execute: bool = False,
-              selected_analysts=("market", "news"), profile: str | None = None) -> list[Order]:
+              selected_analysts=("market", "news"), profile: str | None = None,
+              hold_entry: float | None = None) -> list[Order]:
     from alpaca.trading.enums import OrderSide, TimeInForce
     from alpaca.trading.requests import MarketOrderRequest
     from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -90,7 +91,7 @@ def run_daily(tickers: list[str], run_dir: Path, execute: bool = False,
         append_signal(run_dir / "signals.csv", ticker, today, rating)
         logger.info("%s %s -> %s", ticker, today, rating)
 
-    orders = plan_orders(ratings, equity, holdings)
+    orders = plan_orders(ratings, equity, holdings, hold_entry=hold_entry)
     for order in orders:
         logger.info("%s %s %s $%.2f", "SEND" if execute else "DRY-RUN",
                     order.side, order.ticker, order.notional)
