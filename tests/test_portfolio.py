@@ -67,3 +67,15 @@ def test_plan_orders():
                          equity=4000, holdings={"B": 300, "C": 900, "D": 750})
     by = {o.ticker: (o.side, o.notional) for o in orders}
     assert by == {"A": ("buy", 1000), "B": ("close", 300)}   # D is already on target
+
+
+def test_profiles_set_provider_and_models(monkeypatch):
+    from tasim.config import build_config
+
+    monkeypatch.delenv("TRADINGAGENTS_LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("TASIM_PROFILE", raising=False)
+    assert build_config()["quick_think_llm"] == "gpt-6-luna"
+    eco = build_config(profile="eco")
+    assert (eco["llm_provider"], eco["deep_think_llm"]) == ("deepseek", "deepseek-v4-pro")
+    with pytest.raises(ValueError):
+        build_config(profile="nope")

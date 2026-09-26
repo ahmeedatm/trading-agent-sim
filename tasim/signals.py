@@ -37,13 +37,13 @@ def append_signal(path: Path, ticker: str, date: str, rating: str) -> None:
 
 
 def generate_signals(tickers: list[str], dates: list[str], run_dir: Path,
-                     selected_analysts=("market", "news")) -> Path:
+                     selected_analysts=("market", "news"), profile: str | None = None) -> Path:
     from tradingagents.graph.trading_graph import TradingAgentsGraph
 
     run_dir.mkdir(parents=True, exist_ok=True)
     store = run_dir / "signals.csv"
     config = build_config(results_dir=str(run_dir / "reports"),
-                          memory_log_path=str(run_dir / "trading_memory.md"))
+                          memory_log_path=str(run_dir / "trading_memory.md"), profile=profile)
     graph = TradingAgentsGraph(list(selected_analysts), config=config)
 
     existing = load_signals(store)

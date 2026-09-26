@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from tasim.config import ALL_ANALYSTS, QUICK_ANALYSTS
+from tasim.config import ALL_ANALYSTS, PROFILES, QUICK_ANALYSTS
 
 RUNS = Path("runs")
 
@@ -29,7 +29,7 @@ def cmd_signals(args) -> None:
           f"analysts: {', '.join(analysts)}")
     if not args.yes and input("Each cell is a full multi-agent LLM run. Continue? [y/N] ") != "y":
         return
-    store = generate_signals(args.tickers, dates, RUNS / args.run, analysts)
+    store = generate_signals(args.tickers, dates, RUNS / args.run, analysts, args.profile)
     print(f"Signals written to {store}")
 
 
@@ -77,7 +77,8 @@ def cmd_paper(args) -> None:
     from tasim.paper import run_daily
 
     analysts = ALL_ANALYSTS if args.full else QUICK_ANALYSTS
-    orders = run_daily(args.tickers, RUNS / args.run, execute=args.execute, selected_analysts=analysts)
+    orders = run_daily(args.tickers, RUNS / args.run, execute=args.execute,
+                       selected_analysts=analysts, profile=args.profile)
     if not orders:
         print("No orders (all Hold/REVIEW or already on target).")
     for o in orders:
@@ -96,6 +97,7 @@ def main() -> None:
     p.add_argument("--every", type=int, default=7, help="days between analyses")
     p.add_argument("--run", default="default")
     p.add_argument("--full", action="store_true", help="all four analysts (more LLM cost)")
+    p.add_argument("--profile", choices=sorted(PROFILES), help="LLM profile (default: balanced)")
     p.add_argument("-y", "--yes", action="store_true", help="skip the cost confirmation")
     p.set_defaults(func=cmd_signals)
 
@@ -112,6 +114,7 @@ def main() -> None:
     p.add_argument("tickers", type=_tickers)
     p.add_argument("--run", default="paper")
     p.add_argument("--full", action="store_true")
+    p.add_argument("--profile", choices=sorted(PROFILES), help="LLM profile (default: balanced)")
     p.add_argument("--execute", action="store_true", help="actually send orders (paper account)")
     p.set_defaults(func=cmd_paper)
 

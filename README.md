@@ -26,7 +26,7 @@ TradingAgents produit une note par ticker et par date (`Buy`, `Overweight`, `Hol
 ```bash
 uv venv --python 3.12 && source .venv/bin/activate
 uv pip install -e ".[paper,dev]"
-cp .env.example .env   # ANTHROPIC_API_KEY (+ clés Alpaca paper pour le live)
+cp .env.example .env   # clé du fournisseur LLM (+ clés Alpaca paper pour le live)
 pytest
 ```
 
@@ -45,13 +45,29 @@ tasim paper NVDA,AAPL --execute    # envoie les ordres sur le compte paper
 ```
 
 Par défaut, seuls les analystes `market` et `news` tournent (coût réduit) ; `--full` ajoute `social`
-et `fundamentals`. Modèles par défaut : `claude-sonnet-5` (deep) et `claude-haiku-4-5` (quick),
-modifiables via `TRADINGAGENTS_*` dans `.env`.
+et `fundamentals`.
+
+### Profils LLM (`--profile` ou `TASIM_PROFILE`)
+
+Le modèle *quick* tient ~8 des ~10 rôles d'un run (analystes, débats, trader) : c'est lui qui pèse sur
+la facture. Le modèle *deep* ne sert qu'au Research Manager et au Portfolio Manager.
+
+| Profil | Deep | Quick | Prix $/1M tokens (entrée/sortie) |
+|---|---|---|---|
+| `eco` | `deepseek-v4-pro` | `deepseek-flash` | 0,66/1,98 · 0,15/0,60 (hors pointe, x2 en heures de pointe) |
+| `balanced` (défaut) | `gpt-6-sol` | `gpt-6-luna` | 2/10 · 0,10/0,50 |
+| `premium` | `claude-sonnet-5` | `claude-haiku-4-5` | 2/10 · 1/5 |
+
+Prix relevés en septembre 2026, à revérifier. Les variables `TRADINGAGENTS_*` restent utilisables
+pour tout autre modèle (sans `TASIM_PROFILE`).
 
 ## Limites à garder en tête
 
 - Les flux texte (news, réseaux sociaux) ne sont pas archivés point-in-time : un backtest sur le
   passé voit parfois des contenus postérieurs → résultats **indicatifs**, à confirmer en paper trading.
+- **Biais de connaissance** : un modèle dont les données d'entraînement couvrent la période backtestée
+  « connaît » déjà la suite. Backtester uniquement après la date de coupure du modèle, sinon se fier
+  au paper trading.
 - Un LLM n'est pas déterministe : deux runs d'une même cellule peuvent différer.
 - Ce projet est un outil de recherche, pas un conseil en investissement. Aucun chemin vers un
   compte réel : le client Alpaca est toujours instancié avec `paper=True`.

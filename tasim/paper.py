@@ -60,7 +60,7 @@ def plan_orders(ratings: dict[str, str], equity: float, holdings: dict[str, floa
 
 
 def run_daily(tickers: list[str], run_dir: Path, execute: bool = False,
-              selected_analysts=("market", "news")) -> list[Order]:
+              selected_analysts=("market", "news"), profile: str | None = None) -> list[Order]:
     from alpaca.trading.enums import OrderSide, TimeInForce
     from alpaca.trading.requests import MarketOrderRequest
     from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -79,7 +79,7 @@ def run_daily(tickers: list[str], run_dir: Path, execute: bool = False,
 
     run_dir.mkdir(parents=True, exist_ok=True)
     config = build_config(results_dir=str(run_dir / "reports"),
-                          memory_log_path=str(run_dir / "trading_memory.md"))
+                          memory_log_path=str(run_dir / "trading_memory.md"), profile=profile)
     graph = TradingAgentsGraph(list(selected_analysts), config=config)
     today = date.today().isoformat()
 
